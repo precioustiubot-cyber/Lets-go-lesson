@@ -2,44 +2,59 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Let's Go 4: Unit 1 - The Great Outdoors</title>
+    <title>Let's Go 4 - Interactive Lesson</title>
     <style>
         :root { --red: #d32f2f; --white: #ffffff; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; text-align: center; background-color: var(--white); color: #333; margin: 0; padding-bottom: 50px; }
-        header { background-color: var(--red); color: var(--white); padding: 30px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .container { max-width: 700px; margin: auto; padding: 20px; border: 2px solid var(--red); border-radius: 15px; }
-        .vocab-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; }
-        .card { padding: 15px; border: 2px solid var(--red); border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .card:hover { background-color: var(--red); color: white; transform: scale(1.05); }
-        .btn { background-color: var(--red); color: white; border: none; padding: 12px 25px; font-size: 18px; border-radius: 5px; cursor: pointer; margin-top: 15px; }
-        .btn:active { transform: translateY(2px); }
-        #feedback { font-weight: bold; margin-top: 15px; font-size: 1.2rem; }
-        .progress-container { width: 80%; background: #eee; height: 10px; margin: 20px auto; border-radius: 5px; overflow: hidden; }
-        #progress-bar { width: 0%; height: 100%; background: var(--red); transition: 0.5s; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; text-align: center; background-color: var(--white); color: #333; margin: 0; padding-bottom: 50px; }
+        header { background-color: var(--red); color: var(--white); padding: 25px; margin-bottom: 20px; }
+        .container { max-width: 800px; margin: auto; padding: 20px; border: 2px solid var(--red); border-radius: 15px; }
+        
+        /* Memory Game Styles */
+        .memory-game {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 20px auto;
+            max-width: 500px;
+        }
+        .memory-card {
+            height: 100px;
+            background-color: var(--red);
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid #b71c1c;
+        }
+        .memory-card.hidden { color: transparent; background-color: var(--red); }
+        .memory-card.flipped { color: var(--white); background-color: #ff5252; }
+        .memory-card.matched { background-color: #4CAF50; border-color: #388E3C; cursor: default; }
+
+        .btn { background-color: var(--red); color: white; border: none; padding: 12px 25px; font-size: 18px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        #feedback { font-weight: bold; margin-top: 15px; font-size: 1.2rem; color: var(--red); }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>Unit 1: The Great Outdoors</h1>
-    <p>Let's Learn & Play!</p>
+    <h1>Let's Go 4: The Great Outdoors</h1>
+    <p>Memory Match & Weather Quiz</p>
 </header>
 
 <div class="container">
-    <div class="progress-container"><div id="progress-bar"></div></div>
-    
-    <h2>Vocabulary: What do you have?</h2>
-    <p>Click the gear you need for <strong>skateboarding</strong>:</p>
-    <div class="vocab-grid">
-        <div class="card" onclick="checkVocab('mitt', false)">A Mitt</div>
-        <div class="card" onclick="checkVocab('bat', false)">A Bat</div>
-        <div class="card" onclick="checkVocab('skateboard', true)">A Skateboard</div>
-        <div class="card" onclick="checkVocab('helmet', true)">A Helmet</div>
-    </div>
+    <h2>Game 1: Weather Memory Match</h2>
+    <p>Find the matching pairs!</p>
+    <div class="memory-game" id="gameBoard">
+        </div>
+    <button class="btn" onclick="resetGame()">Restart Game</button>
 
     <hr style="margin: 40px 0; border: 1px solid #eee;">
 
-    <h2>The Weather Chant</h2>
+    <h2>Game 2: The Weather Chant</h2>
     <p>"The newspaper says it's going to..."</p>
     <button class="btn" onclick="checkWeather('snow')">Snow ❄️</button>
     <button class="btn" onclick="checkWeather('rain')">Rain 🌧️</button>
@@ -47,38 +62,51 @@
 </div>
 
 <script>
-    let points = 0;
-    function updateProgress() {
-        const bar = document.getElementById('progress-bar');
-        bar.style.width = (points * 25) + "%";
+    const items = ['☀️', '☀️', '🌧️', '🌧️', '❄️', '❄️', '🌬️', '🌬️'];
+    let flippedCards = [];
+    let matchedCount = 0;
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
     }
 
-    function checkVocab(item, isCorrect) {
-        const f = document.getElementById('feedback');
-        if(isCorrect) {
-            f.innerText = "Yes! You need " + item + " for skateboarding! ✅";
-            f.style.color = "green";
-            points++;
-            updateProgress();
-        } else {
-            f.innerText = "Try again! Look at page 6.";
-            f.style.color = "red";
+    function createBoard() {
+        const board = document.getElementById('gameBoard');
+        board.innerHTML = '';
+        const shuffledItems = shuffle([...items]);
+        shuffledItems.forEach((item, index) => {
+            const card = document.createElement('div');
+            card.classList.add('memory-card', 'hidden');
+            card.dataset.value = item;
+            card.innerText = item;
+            card.onclick = () => flipCard(card);
+            board.appendChild(card);
+        });
+    }
+
+    function flipCard(card) {
+        if (flippedCards.length < 2 && !card.classList.contains('flipped') && !card.classList.contains('matched')) {
+            card.classList.remove('hidden');
+            card.classList.add('flipped');
+            flippedCards.push(card);
+
+            if (flippedCards.length === 2) {
+                setTimeout(checkMatch, 700);
+            }
         }
     }
 
-    function checkWeather(ans) {
-        const f = document.getElementById('feedback');
-        if(ans === 'snow') {
-            f.innerText = "Correct! 'The newspaper says it's going to snow.' ❄️";
-            f.style.color = "green";
-            points++;
-            updateProgress();
+    function checkMatch() {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.value === card2.dataset.value) {
+            card1.classList.add('matched');
+            card2.classList.add('matched');
+            matchedCount += 2;
+            if (matchedCount === items.length) alert("Great job! You matched them all!");
         } else {
-            f.innerText = "Not quite. Check page 5! 📖";
-            f.style.color = "red";
+            card1.classList.add('hidden');
+            card1.classList.remove('flipped');
+            card2.classList.add('hidden');
+            card2.classList.remove('flipped');
         }
-    }
-</script>
-
-</body>
-</html>
+        flippedCards = [];
